@@ -26,22 +26,26 @@ class ListVideos(APIView):
             
 
 class DetailVideo(APIView):
-    def get(self, request, pk):
+    def _get_object(self, pk):
         try:
-            video = VideoSerializer(Video.objects.get(pk=pk))
-            return Response(video.data)
+            return Video.objects.get(pk=pk)
         except Video.DoesNotExist:
             raise Http404
+
+
+    def get(self, request, pk):
+        video = VideoSerializer(self._get_object(pk))
+        return Response(video.data)
 
     def put(self, request, pk):
-        try:
-            video = Video.objects.get(pk=pk)
-            video_json = VideoSerializer(video, data=request.data)
+        video = VideoSerializer(self._get_object(pk), data=request.data)
 
-            if video_json.is_valid():
-                video_json.save()
-                return Response(video_json.data)
-            return Response(video.errors, status=400)
+        if video.is_valid():
+            video.save()
+            return Response(video.data)
+        return Response(video.errors, status=400)
 
-        except Video.DoesNotExist:
-            raise Http404
+    def delete(self, request, pk):
+        video = self._get_object(pk)
+        video.delete()
+        return Response(status=200)
